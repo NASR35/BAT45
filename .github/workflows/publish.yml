@@ -23,21 +23,17 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - name: Fetch + validate data
+      - name: Fetch and save data
         run: |
           curl -fsSL --retry 3 "${{ vars.API_URL }}?action=public" -o web/data.json
           jq -e '.' web/data.json >/dev/null
 
-      - name: Keepalive commit (يومياً)
+      - name: Commit and push data.json if changed
         run: |
-          date -u +%F > .last_run
-          if [ -n "$(git status --porcelain .last_run)" ]; then
-            git config user.name github-actions
-            git config user.email actions@github.com
-            git add .last_run
-            git commit -m "keepalive $(cat .last_run)"
-            git push
-          fi
+          git config user.name github-actions
+          git config user.email actions@github.com
+          git add web/data.json
+          git diff --quiet && git diff --staged --quiet || (git commit -m "update data.json" && git push)
 
       - name: Setup Pages
         uses: actions/configure-pages@v6
